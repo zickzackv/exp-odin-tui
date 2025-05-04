@@ -3,7 +3,6 @@ package ocurses
 import "core:fmt"
 import "core:os"
 import "core:strings"
-import "core:sys/linux"
 import "core:time"
 import "core:unicode/utf8"
 

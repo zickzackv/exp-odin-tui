@@ -2,8 +2,6 @@ package ocurses
 
 import "core:os"
 import "core:sys/posix"
-import "core:sys/linux"
-
 
 TerminalError :: enum {
     None,
@@ -35,8 +33,6 @@ winsize :: struct {
     ws_ypixel: u16, // vertical size, pixels
 }
 
-TIOCGWINSZ :: 0x5413 // This value might be different on your system
-
 init_terminal :: proc() -> (Terminal, TerminalError) {
 
     handle, error := os.open("/dev/tty", os.O_RDWR, 0o000)
@@ -44,30 +40,29 @@ init_terminal :: proc() -> (Terminal, TerminalError) {
         return {}, .TcsetattrFailed
     }
 
-    term_inital_settings : posix.termios
+    term_inital_settings: posix.termios
 
     // Get current terminal settings
     if posix.tcgetattr(posix.FD(handle), &term_inital_settings) == .FAIL {
         os.close(handle)
         return {}, .TcsetattrFailed
     }
-    // Get terminal size
-    winsize: winsize
-    if linux.ioctl(linux.Fd(handle), TIOCGWINSZ, uintptr(&winsize)) < 0 {
+
+    if rows, cols, ok := get_terminal_winsize(); ok {
+        term := Terminal {
+            mode     = TerminalMode.Cooked,
+            tty      = handle,
+            settings = term_inital_settings,
+            rows     = rows,
+            cols     = cols,
+        }
+        return term, .None
+    } else {
         os.close(handle)
         return {}, .WinSizeFailed
     }
-
-    term := Terminal {
-        mode = TerminalMode.Cooked,
-        tty  = handle,
-        settings = term_inital_settings,
-        rows = winsize.ws_row,
-        cols = winsize.ws_col,
-    }
-
-    return term, .None
 }
+
 
 uncook :: proc(term: ^Terminal) -> TerminalError {
     // return an error if mode is raw

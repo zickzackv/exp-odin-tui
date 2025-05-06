@@ -5,7 +5,7 @@ import "core:sys/linux"
 TIOCGWINSZ :: 0x5413
 
 get_terminal_winsize :: proc() -> (rows: u16, cols: u16, ok: bool) {
-    ws: Winsize
+    ws: winsize
     fd := 1 // STDOUT_FILENO
     // Linux syscall
     result := linux.syscall(
